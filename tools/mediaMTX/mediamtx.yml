@@ -1,0 +1,167 @@
+###############################################
+# 全局设置 → 基础通用设置
+
+# 日志详细程度：可选值 error（错误）、warn（警告）、info（信息）、debug（调试）
+logLevel: info
+# 日志输出到哪里：可选 stdout（控制台）、file（文件）、syslog（系统日志）
+logDestinations: [file]
+# 如果上面选择了输出到文件，这里就是日志文件的保存路径
+logFile: logs/mediamtx.log
+# 如果用系统日志，给日志加个前缀（一般不用管）
+sysLogPrefix: mediamtx
+
+# 读取上游 RTSP 流（摄像头 /rtsp 源）的超时时间。
+# (连续10 秒收不到视频 / 数据 → 判定断流，自动重连。)
+#【弱网、卡顿环境 → 调小 读取超时，弱网快速重连 建议从默认10s改成：2s】
+readTimeout: 2s
+# 向下游 WebRTC 客户端（浏览器）发数据超时。
+# (10 秒发不出去 → 断开客户端连接。 低延迟 + 弱网 → 调小)
+#【低延迟 + 弱网 → 调小 发送超时，减少滞留数据 建议从默认10s改成：2s】
+writeTimeout: 2s
+# 输出缓存队列大小
+# 数值越大 → 缓存越多 → 延迟越大，抗抖动越强
+# 数值越小 → 缓存越小 → 延迟极低，弱网容易丢包
+writeQueueSize: 512
+# UDP 协议下，单条数据包最大长度
+udpMaxPayloadSize: 1472
+
+###############################################
+# API
+
+# 启用通过控制 API 控制服务器。
+api: yes
+# 控制 API 监听器的地址。
+apiAddress: :9997
+
+###############################################
+# 全局设置 -> 回放服务器
+
+# 启用从回放服务器下载录制内容。
+playback: no
+# 回放服务器监听器的地址。
+playbackAddress: :9996
+# 每个 HTTP 响应中提供的 Access-Control-Allow-Origin 头的值。
+playbackAllowOrigin: '*'
+# HTTP 服务器前面放置的代理的 IP 或 CIDR 列表。
+# 如果服务器收到来自这些条目的请求，日志中的 IP
+# 将从 X-Forwarded-For 头中获取。
+playbackTrustedProxies: []
+
+###############################################
+# 全局设置 -> RTSP 服务器
+
+# 启用使用 RTSP 协议发布和读取流。
+rtsp: yes
+# 启用的 RTSP 传输协议列表。
+# tcp : 抗弱网 + 不卡顿
+rtspTransports: [tcp]
+
+###############################################
+# 全局设置 -> WebRTC 服务器
+
+# 启用使用 WebRTC 协议发布和读取流。
+webrtc: yes
+# WebRTC HTTP 监听器的地址。
+webrtcAddress: :8889
+# 每个 HTTP 响应中提供的 Access-Control-Allow-Origin 头的值。
+# 这允许从外部网站播放 WebRTC 流。
+webrtcAllowOrigin: '*'
+# 将接收连接的本地 UDP 监听器的地址。
+# 使用空字符串禁用。
+webrtcLocalUDPAddress: :8189
+# WebRTC 客户端需要知道服务器的 IP。
+# 从接口收集 IP 并将它们发送给客户端。
+webrtcIPsFromInterfaces: yes
+# 等待 WebRTC 握手完成的时间。【握手超时：缩短 → 更快建立连接 10s 改为 3s 】
+webrtcHandshakeTimeout: 5s 
+# 收集视频轨道的最长时间。【轨道收集时间：缩短 → 更快出画面 2s 改为 500ms 】
+webrtcTrackGatherTimeout: 1s
+# 收集 STUN 候选者的最长时间。【STUN 候选者收集时间：缩短 → 更快建立连接 5s 改为 2s 】
+webrtcSTUNGatherTimeout: 2s
+
+###############################################
+# 默认路径设置
+
+# "pathDefaults" 中的设置在任何地方都适用，
+# 除非它们在 "paths" 中被覆盖。
+pathDefaults:
+
+  ###############################################
+  # 默认路径设置 -> 通用（抗弱网关键）【角色：等待别人推流】
+  source: publisher
+  sourceOnDemand: no
+  sourceOnDemandStartTimeout: 5s
+  sourceOnDemandCloseAfter: 10s
+  # 最大读取器数量。零表示无限制。【关键：限制并发数，防止资源耗尽】
+  maxReaders: 0
+
+  ###############################################
+  # 默认路径设置 -> 录制
+
+  # 将流录制到磁盘。
+  record: no
+  # 录制段的路径。
+  # 扩展名会自动添加。
+  # 可用变量有 %path（路径名称）、%Y %m %d（年、月、日）、
+  # %H %M %S（小时、分钟、秒）、%f（微秒）、%z（时区）、%s（Unix 时间戳）。
+  recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  # 录制段的格式。
+  # 可用格式有 "fmp4"（分片 MP4）和 "mpegts"（MPEG-TS）。
+  recordFormat: fmp4
+  # fMP4 段是小 MP4 文件（部分）的连接，每个文件具有此持续时间。
+  # MPEG-TS 段是 188 字节数据包的连接，以此周期刷新到磁盘。
+  # 当系统故障发生时，最后一部分会丢失。
+  # 因此，部分持续时间等于 RPO（恢复点目标）。
+  recordPartDuration: 1s
+  # 这可以防止 RAM 耗尽。
+  recordMaxPartSize: 50M
+  # 每个段的最小持续时间。
+  recordSegmentDuration: 1h
+  # 在此时间跨度后删除段。
+  # 设置为 0s 以禁用自动删除。
+  recordDeleteAfter: 1d
+
+  rtspTransport: tcp
+  rtspAnyPort: no
+  rtspRangeType:
+  rtspRangeStart:
+  rtspUDPReadBufferSize: 0
+  mpegtsUDPReadBufferSize: 0
+  rtpSDP:
+  rtpUDPReadBufferSize: 0
+  sourceRedirect:
+  runOnInit:
+  runOnInitRestart: no
+  runOnDemand:
+  runOnDemandRestart: no
+  runOnDemandStartTimeout: 3s
+  runOnDemandCloseAfter: 1s
+  runOnUnDemand:
+  runOnReady:
+  runOnReadyRestart: no
+  runOnNotReady:
+  runOnRead:
+  runOnReadRestart: no
+  runOnUnread:
+  runOnRecordSegmentCreate:
+  runOnRecordSegmentComplete:
+
+###############################################
+# 路径设置
+paths:
+  live:
+    # 从远程 RTSP 服务器拉取流
+    source: rtsp://127.0.0.1:554/drone1.mp4
+    sourceOnDemand: yes
+    rtspTransport: tcp
+    record: no
+    sourceOnDemandCloseAfter: 30s
+
+  live1:
+      # 从远程 RTSP 服务器拉取流
+      source: rtsp://127.0.0.1:554/drone.mp4
+      sourceOnDemand: yes
+      rtspTransport: tcp
+      record: no
+      sourceOnDemandCloseAfter: 30s
+  all_others:

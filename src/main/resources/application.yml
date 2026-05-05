@@ -1,0 +1,4 @@
+media-mtx:
+  workingDir: ./tools/mediaMTX
+  exe: mediamtx.exe
+  yml: mediamtx.yml
