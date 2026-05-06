@@ -38,10 +38,12 @@
         <input type="text" id="list_path" value="live11">
 
         <label>开始时间 (start, 可选):</label>
-        <input type="text" id="list_start" value="2026-05-07T00:00:00+08:00">
+        <input type="text" id="list_start" value="2026-05-07T00:00:00.000+08:00">
+        <div class="hint">* 格式示例: 2026-05-07T00:00:00.123+08:00 (支持毫秒)</div>
 
         <label>结束时间 (end, 可选):</label>
-        <input type="text" id="list_end" value="2026-05-07T01:00:00+08:00">
+        <input type="text" id="list_end" value="2026-05-07T01:00:00.000+08:00">
+        <div class="hint">* 格式示例: 2026-05-07T01:00:00.123+08:00 (支持毫秒)</div>
 
         <button onclick="fetchRecordings()">查询时间段</button>
 
@@ -55,11 +57,11 @@
         <input type="text" id="get_path" value="live11">
 
         <label>开始时间 (start, RFC3339):</label>
-        <input type="text" id="get_start" value="2026-05-07T00:40:00+08:00">
-        <div class="hint">* 格式示例: 2026-05-07T00:40:00+08:00</div>
+        <input type="text" id="get_start" value="2026-05-07T00:40:00.000+08:00">
+        <div class="hint">* 格式示例: 2026-05-07T00:40:00.123+08:00 (支持毫秒)</div>
 
         <label>持续时长 (duration, 秒):</label>
-        <input type="number" id="get_duration" value="60">
+        <input type="number" id="get_duration" step="0.001" value="60.0">
 
         <label>输出格式 (format):</label>
         <select id="get_format">
