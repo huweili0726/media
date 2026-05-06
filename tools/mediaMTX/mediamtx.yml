@@ -37,7 +37,7 @@ apiAddress: :9997
 # 全局设置 -> 回放服务器
 
 # 启用从回放服务器下载录制内容。
-playback: no
+playback: yes
 # 回放服务器监听器的地址。
 playbackAddress: :9996
 # 每个 HTTP 响应中提供的 Access-Control-Allow-Origin 头的值。
@@ -99,12 +99,12 @@ pathDefaults:
   # 默认路径设置 -> 录制
 
   # 将流录制到磁盘。
-  record: no
+  record: yes
   # 录制段的路径。
   # 扩展名会自动添加。
   # 可用变量有 %path（路径名称）、%Y %m %d（年、月、日）、
   # %H %M %S（小时、分钟、秒）、%f（微秒）、%z（时区）、%s（Unix 时间戳）。
-  recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  recordPath: D:/hwl/files/video/%path/%Y-%m-%d_%H-%M-%S-%f
   # 录制段的格式。
   # 可用格式有 "fmp4"（分片 MP4）和 "mpegts"（MPEG-TS）。
   recordFormat: fmp4
@@ -116,10 +116,10 @@ pathDefaults:
   # 这可以防止 RAM 耗尽。
   recordMaxPartSize: 50M
   # 每个段的最小持续时间。
-  recordSegmentDuration: 1h
+  recordSegmentDuration: 30s
   # 在此时间跨度后删除段。
-  # 设置为 0s 以禁用自动删除。
-  recordDeleteAfter: 1d
+  # 设置为 0s 以禁用自动删除。  (自动删除：超过 7 天的录像自动删掉)
+  recordDeleteAfter: 7d
 
   rtspTransport: tcp
   rtspAnyPort: no
@@ -149,19 +149,46 @@ pathDefaults:
 ###############################################
 # 路径设置
 paths:
-  live:
+  live11:
     # 从远程 RTSP 服务器拉取流
-    source: rtsp://127.0.0.1:554/drone1.mp4
-    sourceOnDemand: yes
+    source: rtsp://127.0.0.1:554/easy.mp4
+    # sourceOnDemand: no → MediaMTX 启动就主动拉流，一直有流，就会一直录，不需要浏览器访问
+    # sourceOnDemand: yes：默认不拉流，有人请求（浏览器 / VLC）才拉。
+    sourceOnDemand: no
     rtspTransport: tcp
-    record: no
+    record: yes
+    recordSegmentDuration: 30s  # 30秒一个分段
     sourceOnDemandCloseAfter: 30s
 
-  live1:
-      # 从远程 RTSP 服务器拉取流
-      source: rtsp://127.0.0.1:554/drone.mp4
-      sourceOnDemand: yes
-      rtspTransport: tcp
-      record: no
-      sourceOnDemandCloseAfter: 30s
+  # 莱斯电子A型近程光电1 可见光
+#  live1:
+#    source: rtsp://192.168.4.176:8556/video
+#    sourceOnDemand: yes
+#    rtspTransport: tcp
+#    record: no
+#    sourceOnDemandCloseAfter: 30s
+#
+#  # 莱斯电子C型中程光电1 可见光
+#  live:
+#    source: rtsp://192.168.4.71:8556/video
+#    sourceOnDemand: yes
+#    rtspTransport: tcp
+#    record: no
+#    sourceOnDemandCloseAfter: 30s
+#
+#  # 莱斯电子A型近程光电1 热成像
+#  live2:
+#    source: rtsp://192.168.4.176:8558/video1
+#    sourceOnDemand: yes
+#    rtspTransport: tcp
+#    record: no
+#    sourceOnDemandCloseAfter: 30s
+#
+#  # 莱斯电子C型中程光电1 热成像
+#  live3:
+#    source: rtsp://192.168.4.71:8558/video1
+#    sourceOnDemand: yes
+#    rtspTransport: tcp
+#    record: no
+#    sourceOnDemandCloseAfter: 30s
   all_others:

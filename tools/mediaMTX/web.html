@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Mediamtx 录像管理工具</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f9f9f9; }
+        .container { max-width: 700px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+
+        /* Tab 切换样式 */
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; border: none; background: none; font-size: 16px; color: #666; outline: none; }
+        .tab.active { border-bottom: 3px solid #007BFF; color: #007BFF; font-weight: bold; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        input, select, button { padding: 10px; margin: 8px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background-color: #007BFF; color: white; border: none; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        pre { background: #2d2d2d; color: #76ff03; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 14px; }
+        video { width: 100%; margin-top: 15px; border-radius: 4px; background: #000; }
+        .hint { font-size: 12px; color: #888; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Mediamtx 录像管理工具</h2>
+
+    <!-- Tab 导航 -->
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('list')">📋 查询录像列表</button>
+        <button class="tab" onclick="switchTab('get')">▶️ 下载 / 回放</button>
+    </div>
+
+    <!-- 模块1：查询录像列表 -->
+    <div id="list" class="tab-content active">
+        <label>路径名称 (path):</label>
+        <input type="text" id="list_path" value="live11">
+
+        <label>开始时间 (start, 可选):</label>
+        <input type="text" id="list_start" value="2026-05-07T00:00:00+08:00">
+
+        <label>结束时间 (end, 可选):</label>
+        <input type="text" id="list_end" value="2026-05-07T01:00:00+08:00">
+
+        <button onclick="fetchRecordings()">查询时间段</button>
+
+        <h4>返回结果 (JSON):</h4>
+        <pre id="list_result">点击按钮查看结果...</pre>
+    </div>
+
+    <!-- 模块2：下载/回放录像 -->
+    <div id="get" class="tab-content">
+        <label>路径名称 (path):</label>
+        <input type="text" id="get_path" value="live11">
+
+        <label>开始时间 (start, RFC3339):</label>
+        <input type="text" id="get_start" value="2026-05-07T00:40:00+08:00">
+        <div class="hint">* 格式示例: 2026-05-07T00:40:00+08:00</div>
+
+        <label>持续时长 (duration, 秒):</label>
+        <input type="number" id="get_duration" value="60">
+
+        <label>输出格式 (format):</label>
+        <select id="get_format">
+            <option value="fmp4">fmp4 (默认, 适合流式传输)</option>
+            <option value="mp4">mp4 (适合直接下载播放)</option>
+        </select>
+
+        <button onclick="playOrDownload()">生成链接并预览</button>
+
+        <h4>视频预览 / 下载:</h4>
+        <div id="video_container"></div>
+        <div class="hint" id="download_link"></div>
+    </div>
+</div>
+
+<script>
+    // Tab 切换逻辑
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(div => div.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
+
+        document.getElementById(tabId).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // 1. 查询录像列表
+    function fetchRecordings() {
+        const path = document.getElementById('list_path').value;
+        const start = document.getElementById('list_start').value;
+        const end = document.getElementById('list_end').value;
+
+        let url = `http://localhost:9996/list?path=${path}`;
+        if (start) url += `&start=${encodeURIComponent(start)}`;
+        if (end) url += `&end=${encodeURIComponent(end)}`;
+
+        document.getElementById('list_result').innerText = '正在请求中...';
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('list_result').innerText = JSON.stringify(data, null, 4);
+            })
+            .catch(error => {
+                document.getElementById('list_result').innerText = '请求出错: ' + error.message;
+            });
+    }
+
+    // 2. 下载/回放录像
+    function playOrDownload() {
+        const path = document.getElementById('get_path').value;
+        const start = document.getElementById('get_start').value;
+        const duration = document.getElementById('get_duration').value;
+        const format = document.getElementById('get_format').value;
+
+        // 拼接下载/回放 URL
+        const finalUrl = `http://localhost:9996/get?path=${path}&start=${encodeURIComponent(start)}&duration=${duration}&format=${format}`;
+
+        const container = document.getElementById('video_container');
+        const linkDiv = document.getElementById('download_link');
+
+        // 渲染视频播放器
+        container.innerHTML = `
+            <video controls autoplay>
+                <source src="${finalUrl}" type="video/mp4" />
+                您的浏览器不支持视频播放。
+            </video>
+        `;
+
+        // 显示完整链接方便复制下载
+        linkDiv.innerHTML = `视频链接：<a href="${finalUrl}" target="_blank">${finalUrl}</a> (右键可另存为)`;
+    }
+</script>
+</body>
+</html>
